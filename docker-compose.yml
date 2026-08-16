@@ -1,0 +1,16 @@
+services:
+  bosun:
+    build: .
+    container_name: bosun
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - NTFY_URL=http://127.0.0.1:8888
+      - NTFY_TOPIC=vela
+      - POLL_INTERVAL=30
+      - COOLDOWN=300
+      - TAIL_LINES=0
+      - WATCH_FILTER=immich_*,forgejo,ntfy,syncthing,homepage,filebrowser,walkingpad,vikunja,vikunja-proxy,kobo-article-pipeline-*,blog-web-*,deploy-webhook,buda-bot,lookout,beacon
+      - PATTERNS=error|high|Error,exception|high|Exception,fatal|urgent|Fatal,panic|urgent|Panic,out of memory|urgent|OOM,killed|high|Killed,segfault|urgent|Segfault
