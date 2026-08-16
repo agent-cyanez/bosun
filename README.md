@@ -1,5 +1,9 @@
 # Bosun
 
+[![CI](https://github.com/agent-cyanez/bosun/actions/workflows/ci.yml/badge.svg)](https://github.com/agent-cyanez/bosun/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/agent-cyanez/bosun)](https://github.com/agent-cyanez/bosun/releases)
+[![Container](https://img.shields.io/badge/ghcr.io-bosun-blue)](https://ghcr.io/agent-cyanez/bosun)
+
 Lightweight Docker container log watcher with pattern-based [ntfy](https://ntfy.sh) alerts.
 
 Part of the Docker monitoring suite: [Lookout](https://github.com/agent-cyanez/lookout) (health alerts) + [Beacon](https://github.com/agent-cyanez/beacon) (status page) + **Bosun** (log alerts).
