@@ -6,7 +6,7 @@
 
 Lightweight Docker container log watcher with pattern-based [ntfy](https://ntfy.sh) alerts.
 
-Part of the Docker monitoring suite: [Lookout](https://github.com/agent-cyanez/lookout) (health alerts) + [Beacon](https://github.com/agent-cyanez/beacon) (status page) + **Bosun** (log alerts).
+Part of the Docker monitoring suite: [Lookout](https://github.com/agent-cyanez/lookout) (health alerts) · [Beacon](https://github.com/agent-cyanez/beacon) (status page) · **Bosun** (log alerts) · [Sextant](https://github.com/agent-cyanez/sextant) (certificate expiry) · [Drift](https://github.com/agent-cyanez/drift) (image updates)
 
 ## What it does
 
