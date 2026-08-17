@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        run: |
+          apt-get update -qq
+          apt-get install -y -qq python3 > /dev/null
+      - name: Lint
+        run: python3 -m py_compile bosun.py
+      - name: Test
+        run: python3 -m unittest test_bosun -v
