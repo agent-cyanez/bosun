@@ -48,6 +48,7 @@ services:
 |----------|---------|-------------|
 | `NTFY_URL` | `http://127.0.0.1:8888` | ntfy server URL |
 | `NTFY_TOPIC` | `bosun` | ntfy topic for alerts |
+| `NTFY_MAX_PRIORITY` | *(none)* | Ceiling for alert priority (`min`, `low`, `default`, `high`, `urgent`). Set to `default` to keep high/urgent free for messages a human must see |
 | `WATCH_FILTER` | *(all containers)* | Comma-separated container names/globs to watch |
 | `PATTERNS` | `error\|exception\|fatal\|panic\|critical` | Comma-separated match patterns (see below) |
 | `PATTERN_FILE` | *(none)* | Path to a file with patterns, one per line |
