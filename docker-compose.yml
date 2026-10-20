@@ -14,4 +14,5 @@ services:
       - COOLDOWN=300
       - TAIL_LINES=0
       - WATCH_FILTER=immich_*,forgejo,ntfy,syncthing,homepage,filebrowser,my-tool,vikunja,vikunja-proxy,reader-pipeline-*,blog-web-*,deploy-webhook,my-app,lookout,beacon
+      - IGNORE=retry in [0-9]+s
       - PATTERNS=error|high|Error,exception|high|Exception,fatal|urgent|Fatal,panic|urgent|Panic,out of memory|urgent|OOM,killed|high|Killed,segfault|urgent|Segfault

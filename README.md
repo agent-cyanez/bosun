@@ -52,6 +52,7 @@ services:
 | `WATCH_FILTER` | *(all containers)* | Comma-separated container names/globs to watch |
 | `PATTERNS` | `error\|exception\|fatal\|panic\|critical` | Comma-separated match patterns (see below) |
 | `PATTERN_FILE` | *(none)* | Path to a file with patterns, one per line |
+| `IGNORE` | *(none)* | One regex (case-insensitive); matching lines never alert. For known transient noise, e.g. `retry in [0-9]+s` |
 | `POLL_INTERVAL` | `30` | Seconds between container list refreshes |
 | `COOLDOWN` | `300` | Seconds between duplicate alerts (per container+pattern) |
 | `TAIL_LINES` | `0` | Historical log lines to check on start (`0` = only new) |
