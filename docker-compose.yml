@@ -9,6 +9,7 @@ services:
     environment:
       - NTFY_URL=http://127.0.0.1:8888
       - NTFY_TOPIC=vela
+      - NTFY_MAX_PRIORITY=default
       - POLL_INTERVAL=30
       - COOLDOWN=300
       - TAIL_LINES=0
