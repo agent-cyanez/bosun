@@ -2,6 +2,7 @@
 """Tests for Bosun — Docker container log watcher."""
 
 import os
+import re
 import struct
 import sys
 import threading
@@ -252,6 +253,20 @@ class TestCapPriority(unittest.TestCase):
     def test_leaves_lower_priorities_alone(self):
         self.assertEqual(bosun.cap_priority("default", cap="default"), "default")
         self.assertEqual(bosun.cap_priority("low", cap="default"), "low")
+
+
+class TestIsIgnored(unittest.TestCase):
+    RETRY = re.compile(r"retry in \d+s", re.IGNORECASE)
+
+    def test_no_ignore_regex(self):
+        self.assertFalse(bosun.is_ignored("ERROR: boom", ignore_re=None))
+
+    def test_matching_line_ignored(self):
+        line = "WARNING app.client: upstream error, retry in 2s: Client error '401 Unauthorized'"
+        self.assertTrue(bosun.is_ignored(line, ignore_re=self.RETRY))
+
+    def test_other_errors_still_alert(self):
+        self.assertFalse(bosun.is_ignored("ERROR app.client: request failed: x", ignore_re=self.RETRY))
 
 
 if __name__ == "__main__":

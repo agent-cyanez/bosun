@@ -23,6 +23,20 @@ WATCH_FILTER = os.environ.get("WATCH_FILTER", "")
 COOLDOWN = int(os.environ.get("COOLDOWN", "300"))
 TAIL_LINES = os.environ.get("TAIL_LINES", "0")
 
+# Lines matching IGNORE (one regex, case-insensitive) never alert, even if a
+# pattern matches. Meant for known transient noise, e.g. warnings that a
+# request is being retried. Empty means ignore nothing.
+IGNORE = os.environ.get("IGNORE", "").strip()
+try:
+    IGNORE_RE = re.compile(IGNORE, re.IGNORECASE) if IGNORE else None
+except re.error as e:
+    raise SystemExit(f"Invalid IGNORE regex {IGNORE!r}: {e}")
+
+
+def is_ignored(line, ignore_re=None):
+    ignore_re = IGNORE_RE if ignore_re is None else ignore_re
+    return bool(ignore_re and ignore_re.search(line))
+
 # ntfy priority ceiling. Set NTFY_MAX_PRIORITY (e.g. "default") to stop this
 # tool from ever sending high/urgent, so those levels stay reserved for
 # messages a human must see. Empty means no cap.
@@ -224,6 +238,8 @@ def watch_container(container_id, name, docker_client, patterns, cooldowns, lock
             decoded_lines, buf = decode_docker_stream(buf)
             now = time.time()
             for line in decoded_lines:
+                if is_ignored(line):
+                    continue
                 for pat in patterns:
                     if pat["regex"].search(line):
                         cooldown_key = f"{name}:{pat['raw']}"
