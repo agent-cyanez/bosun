@@ -102,10 +102,12 @@ class DockerClient:
         sock = self._make_socket()
         sock.settimeout(None)
         tail_param = urllib.parse.quote(str(tail))
+        # HTTP/1.0 on purpose: with 1.1 Docker uses chunked transfer encoding,
+        # and the chunk-size lines corrupt the multiplexed frame parsing.
         request_line = (
             f"GET /containers/{container_id}/logs"
             f"?follow=true&stdout=true&stderr=true&tail={tail_param}&timestamps=true"
-            f" HTTP/1.1\r\n"
+            f" HTTP/1.0\r\n"
             f"Host: localhost\r\n"
             f"Connection: close\r\n"
             f"\r\n"

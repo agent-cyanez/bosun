@@ -225,5 +225,20 @@ class TestWatchContainerCooldown(unittest.TestCase):
         self.assertFalse(should_skip)
 
 
+class TestLogStream(unittest.TestCase):
+    def test_requests_http10_to_avoid_chunked_encoding(self):
+        frame = struct.pack(">BxxxL", 1, 5) + b"hello"
+        sock = MagicMock()
+        sock.recv.return_value = b"HTTP/1.0 200 OK\r\nContent-Type: x\r\n\r\n" + frame
+        client = bosun.DockerClient("/nonexistent")
+        with patch.object(client, "_make_socket", return_value=sock):
+            _, body = client.log_stream("abc")
+        request = sock.sendall.call_args[0][0]
+        self.assertIn(b" HTTP/1.0\r\n", request)
+        lines, rest = bosun.decode_docker_stream(body)
+        self.assertEqual(lines, ["hello"])
+        self.assertEqual(rest, b"")
+
+
 if __name__ == "__main__":
     unittest.main()
