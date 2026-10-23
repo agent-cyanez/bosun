@@ -37,6 +37,50 @@ def is_ignored(line, ignore_re=None):
     ignore_re = IGNORE_RE if ignore_re is None else ignore_re
     return bool(ignore_re and ignore_re.search(line))
 
+# Per-container log level floors. Format: glob=LEVEL,... e.g. "syncthing=ERR".
+# For matching containers, a line whose log level is below the floor never
+# alerts, so a WRN line that merely carries an error= field stays quiet.
+# Lines with no recognizable level token fall through to normal matching.
+_LOG_LEVELS = {"DBG": 1, "DEBUG": 1, "INF": 2, "INFO": 2, "WRN": 3, "WARN": 3,
+               "WARNING": 3, "ERR": 4, "ERROR": 4, "FTL": 5, "FATAL": 5, "CRIT": 5,
+               "CRITICAL": 5, "PANIC": 5}
+# Case-sensitive on purpose: levels are uppercase tokens, while lowercase
+# words like "error=" are message content.
+_LEVEL_RE = re.compile(r"\b(" + "|".join(sorted(_LOG_LEVELS, key=len, reverse=True)) + r")\b")
+
+
+def parse_level_floors(env_value):
+    floors = []
+    for entry in (env_value or "").split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+        glob, sep, level = entry.partition("=")
+        level = level.strip().upper()
+        if not sep or not glob.strip() or level not in _LOG_LEVELS:
+            raise SystemExit(f"Invalid LEVEL_FLOOR entry: {entry!r}")
+        floors.append((glob.strip(), _LOG_LEVELS[level]))
+    return floors
+
+
+LEVEL_FLOORS = parse_level_floors(os.environ.get("LEVEL_FLOOR", ""))
+
+
+def level_floor_for(name, floors=None):
+    """Return the floor for a container (first matching glob wins), or None."""
+    floors = LEVEL_FLOORS if floors is None else floors
+    for glob, level in floors:
+        if fnmatch.fnmatch(name, glob):
+            return level
+    return None
+
+
+def below_floor(line, floor):
+    if floor is None:
+        return False
+    m = _LEVEL_RE.search(line)
+    return bool(m) and _LOG_LEVELS[m.group(1)] < floor
+
 # ntfy priority ceiling. Set NTFY_MAX_PRIORITY (e.g. "default") to stop this
 # tool from ever sending high/urgent, so those levels stay reserved for
 # messages a human must see. Empty means no cap.
@@ -222,6 +266,7 @@ def watch_container(container_id, name, docker_client, patterns, cooldowns, lock
         return
 
     buf = initial_data
+    floor = level_floor_for(name)
     try:
         while not _shutdown.is_set():
             try:
@@ -238,7 +283,7 @@ def watch_container(container_id, name, docker_client, patterns, cooldowns, lock
             decoded_lines, buf = decode_docker_stream(buf)
             now = time.time()
             for line in decoded_lines:
-                if is_ignored(line):
+                if is_ignored(line) or below_floor(line, floor):
                     continue
                 for pat in patterns:
                     if pat["regex"].search(line):
