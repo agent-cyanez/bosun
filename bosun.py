@@ -40,7 +40,8 @@ def is_ignored(line, ignore_re=None):
 # Per-container log level floors. Format: glob=LEVEL,... e.g. "syncthing=ERR".
 # For matching containers, a line whose log level is below the floor never
 # alerts, so a WRN line that merely carries an error= field stays quiet.
-# Lines with no recognizable level token fall through to normal matching.
+# Lines at or above the floor alert even without a keyword match. Lines with
+# no recognizable level token fall through to normal matching.
 _LOG_LEVELS = {"DBG": 1, "DEBUG": 1, "INF": 2, "INFO": 2, "WRN": 3, "WARN": 3,
                "WARNING": 3, "ERR": 4, "ERROR": 4, "FTL": 5, "FATAL": 5, "CRIT": 5,
                "CRITICAL": 5, "PANIC": 5}
@@ -73,6 +74,13 @@ def level_floor_for(name, floors=None):
         if fnmatch.fnmatch(name, glob):
             return level
     return None
+
+
+def at_or_above_floor(line, floor):
+    if floor is None:
+        return False
+    m = _LEVEL_RE.search(line)
+    return bool(m) and _LOG_LEVELS[m.group(1)] >= floor
 
 
 def below_floor(line, floor):
@@ -285,21 +293,25 @@ def watch_container(container_id, name, docker_client, patterns, cooldowns, lock
             for line in decoded_lines:
                 if is_ignored(line) or below_floor(line, floor):
                     continue
-                for pat in patterns:
-                    if pat["regex"].search(line):
-                        cooldown_key = f"{name}:{pat['raw']}"
-                        with lock:
-                            last_alert = cooldowns.get(cooldown_key, 0)
-                            if now - last_alert < COOLDOWN:
-                                continue
-                            cooldowns[cooldown_key] = now
-                        label = pat["label"] or pat["raw"]
-                        title = f"Bosun: {name}"
-                        trimmed = line[:500] if len(line) > 500 else line
-                        body = f"Pattern matched: {label}\n\n{trimmed}"
-                        print(f"[bosun] Alert: {name} matched '{label}'", file=sys.stderr)
-                        notify(title, body, priority=pat["priority"], tags=["warning"])
-                        break
+                # A line at or above a container's floor alerts even with no
+                # keyword match, e.g. Syncthing "ERR Folder path missing".
+                matching = [p for p in patterns if p["regex"].search(line)]
+                if not matching and at_or_above_floor(line, floor):
+                    matching = [{"raw": "level-floor", "priority": "high", "label": "Log level at/above floor"}]
+                for pat in matching:
+                    cooldown_key = f"{name}:{pat['raw']}"
+                    with lock:
+                        last_alert = cooldowns.get(cooldown_key, 0)
+                        if now - last_alert < COOLDOWN:
+                            continue
+                        cooldowns[cooldown_key] = now
+                    label = pat["label"] or pat["raw"]
+                    title = f"Bosun: {name}"
+                    trimmed = line[:500] if len(line) > 500 else line
+                    body = f"Pattern matched: {label}\n\n{trimmed}"
+                    print(f"[bosun] Alert: {name} matched '{label}'", file=sys.stderr)
+                    notify(title, body, priority=pat["priority"], tags=["warning"])
+                    break
     finally:
         try:
             sock.close()
