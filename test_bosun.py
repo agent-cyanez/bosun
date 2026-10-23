@@ -293,6 +293,11 @@ class TestLevelFloor(unittest.TestCase):
     def test_no_level_token_falls_through(self):
         self.assertFalse(bosun.below_floor("panic: runtime error", self.ERR))
 
+    def test_at_or_above_floor(self):
+        self.assertTrue(bosun.at_or_above_floor("ERR Folder path missing", self.ERR))
+        self.assertFalse(bosun.at_or_above_floor("WRN Failed to sync error=x", self.ERR))
+        self.assertFalse(bosun.at_or_above_floor("ERR x", None))
+
     def test_no_floor(self):
         self.assertFalse(bosun.below_floor("INF error=x", None))
 
