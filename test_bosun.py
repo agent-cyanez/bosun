@@ -269,5 +269,33 @@ class TestIsIgnored(unittest.TestCase):
         self.assertFalse(bosun.is_ignored("ERROR app.client: request failed: x", ignore_re=self.RETRY))
 
 
+class TestLevelFloor(unittest.TestCase):
+    FLOORS = bosun.parse_level_floors("syncthing=ERR")
+    ERR = bosun._LOG_LEVELS["ERR"]
+
+    def test_parse_and_lookup(self):
+        self.assertEqual(bosun.level_floor_for("syncthing", self.FLOORS), self.ERR)
+        self.assertIsNone(bosun.level_floor_for("forgejo", self.FLOORS))
+
+    def test_parse_rejects_bad_entries(self):
+        for bad in ("syncthing", "syncthing=LOUD", "=ERR"):
+            with self.assertRaises(SystemExit):
+                bosun.parse_level_floors(bad)
+
+    def test_wrn_with_error_field_below_floor(self):
+        line = ('2026-10-23T14:15:45Z 2026-10-23 14:15:45 WRN Failed to sync '
+                '(path=x.md error="syncing: finishing: pull: no such file")')
+        self.assertTrue(bosun.below_floor(line, self.ERR))
+
+    def test_err_line_alerts(self):
+        self.assertFalse(bosun.below_floor("2026-10-23 14:15:45 ERR Folder path missing", self.ERR))
+
+    def test_no_level_token_falls_through(self):
+        self.assertFalse(bosun.below_floor("panic: runtime error", self.ERR))
+
+    def test_no_floor(self):
+        self.assertFalse(bosun.below_floor("INF error=x", None))
+
+
 if __name__ == "__main__":
     unittest.main()

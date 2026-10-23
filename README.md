@@ -53,6 +53,7 @@ services:
 | `PATTERNS` | `error\|exception\|fatal\|panic\|critical` | Comma-separated match patterns (see below) |
 | `PATTERN_FILE` | *(none)* | Path to a file with patterns, one per line |
 | `IGNORE` | *(none)* | One regex (case-insensitive); matching lines never alert. For known transient noise, e.g. `retry in [0-9]+s` |
+| `LEVEL_FLOOR` | *(none)* | Per-container log level floors, `glob=LEVEL,...` (e.g. `syncthing=ERR`). Lines from matching containers below the floor never alert, so a `WRN` line carrying an `error=` field stays quiet. Lines without an uppercase level token (DBG/INF/WRN/ERR/FTL, DEBUG/INFO/WARN/ERROR/FATAL…) are matched as usual. |
 | `POLL_INTERVAL` | `30` | Seconds between container list refreshes |
 | `COOLDOWN` | `300` | Seconds between duplicate alerts (per container+pattern) |
 | `TAIL_LINES` | `0` | Historical log lines to check on start (`0` = only new) |
