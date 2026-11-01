@@ -298,6 +298,22 @@ class TestLevelFloor(unittest.TestCase):
         self.assertFalse(bosun.at_or_above_floor("WRN Failed to sync error=x", self.ERR))
         self.assertFalse(bosun.at_or_above_floor("ERR x", None))
 
+    FORGEJO_INFO = ("2026/11/01 17:15:21 ...eb/routing/logger.go:109:func1() [I] router: completed "
+                    "GET /alice/firmware/src/commit/f7bd/lib/python/app/errors.py for 172.20.0.1:52884, 200 OK")
+
+    def test_forgejo_bracketed_info_below_floor(self):
+        self.assertTrue(bosun.below_floor(self.FORGEJO_INFO, self.ERR))
+
+    def test_forgejo_bracketed_levels(self):
+        self.assertTrue(bosun.below_floor("2026/11/01 ... [W] slow query", self.ERR))
+        self.assertFalse(bosun.below_floor("2026/11/01 ... [E] db down", self.ERR))
+        self.assertTrue(bosun.at_or_above_floor("2026/11/01 ... [E] db down", self.ERR))
+        self.assertTrue(bosun.at_or_above_floor("2026/11/01 ... [F] fatal", self.ERR))
+
+    def test_bracketed_letter_in_message_not_a_level(self):
+        # Only the first level token counts; "[E]" later in an INF line stays INF.
+        self.assertTrue(bosun.below_floor("INF saw [E] in payload", self.ERR))
+
     def test_no_floor(self):
         self.assertFalse(bosun.below_floor("INF error=x", None))
 

@@ -47,7 +47,17 @@ _LOG_LEVELS = {"DBG": 1, "DEBUG": 1, "INF": 2, "INFO": 2, "WRN": 3, "WARN": 3,
                "CRITICAL": 5, "PANIC": 5}
 # Case-sensitive on purpose: levels are uppercase tokens, while lowercase
 # words like "error=" are message content.
-_LEVEL_RE = re.compile(r"\b(" + "|".join(sorted(_LOG_LEVELS, key=len, reverse=True)) + r")\b")
+# Forgejo/Gitea write the level as a bracketed letter: "[I] router: ...".
+_BRACKET_LEVELS = {"T": 1, "D": 1, "I": 2, "W": 3, "E": 4, "C": 5, "F": 5}
+_LEVEL_RE = re.compile(r"\b(" + "|".join(sorted(_LOG_LEVELS, key=len, reverse=True)) + r")\b"
+                       r"|\[([" + "".join(_BRACKET_LEVELS) + r"])\]")
+
+
+def _line_level(line):
+    m = _LEVEL_RE.search(line)
+    if not m:
+        return None
+    return _LOG_LEVELS[m.group(1)] if m.group(1) else _BRACKET_LEVELS[m.group(2)]
 
 
 def parse_level_floors(env_value):
@@ -79,15 +89,15 @@ def level_floor_for(name, floors=None):
 def at_or_above_floor(line, floor):
     if floor is None:
         return False
-    m = _LEVEL_RE.search(line)
-    return bool(m) and _LOG_LEVELS[m.group(1)] >= floor
+    level = _line_level(line)
+    return level is not None and level >= floor
 
 
 def below_floor(line, floor):
     if floor is None:
         return False
-    m = _LEVEL_RE.search(line)
-    return bool(m) and _LOG_LEVELS[m.group(1)] < floor
+    level = _line_level(line)
+    return level is not None and level < floor
 
 # ntfy priority ceiling. Set NTFY_MAX_PRIORITY (e.g. "default") to stop this
 # tool from ever sending high/urgent, so those levels stay reserved for
